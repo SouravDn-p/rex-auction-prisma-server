@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  user
+  admin
+}
+
+model User {
+  id           String   @id @default(cuid())   // cuid() — collision-resistant, URL-safe IDs
+  name         String   @db.VarChar(50)
+  email        String   @unique
+  password     String                           // always stored hashed
+  role         Role     @default(user)
+  refreshToken String?                          // nullable — cleared on logout
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([email])                              // fast email lookups
+  @@map("users")                               // table name in DB
+}
