@@ -2,7 +2,7 @@ import jwt, {type SignOptions,type JwtPayload } from 'jsonwebtoken';
 import { ENV } from '../../../config/env.config.ts';
 
 export interface TokenPayload {
-  userId: string;
+  userId: number;
   email: string;
   role: string;
 }

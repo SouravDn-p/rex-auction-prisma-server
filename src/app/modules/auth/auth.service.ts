@@ -1,5 +1,6 @@
 import type { User } from "@prisma/client";
 import bcryptjs from "bcryptjs";
+import crypto from "crypto";
 import { prisma } from "../../../config/db/database.config.ts";
 import { HTTP_STATUS } from "../../common/constants/http-status.constants.ts";
 import { MESSAGES } from "../../common/constants/messages.constants.ts";
@@ -11,8 +12,12 @@ import {
 } from "../../common/utils/jwt.util.ts";
 import type { RegisterDto, LoginDto, SafeUser, AuthTokens } from "./interfaces/auth.interface.ts";
 
+const hashToken = (token: string): string => {
+  return crypto.createHash("sha256").update(token).digest("hex");
+};
+
 const sanitizeUser = (user: User): SafeUser => {
-  const { password: _password, refreshToken: _refreshToken, ...safeUser } = user;
+  const { password: _password, ...safeUser } = user;
   return safeUser;
 };
 
@@ -25,12 +30,26 @@ export class AuthService {
 
     const hashedPassword = await bcryptjs.hash(dto.password, 12);
 
-    const user = await prisma.user.create({
-      data: {
-        name: dto.name,
-        email: dto.email,
-        password: hashedPassword,
-      },
+    const user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          name: dto.name,
+          email: dto.email,
+          password: hashedPassword,
+        },
+      });
+
+      await tx.userStats.create({
+        data: {
+          userId: newUser.id,
+          accountBalance: 0,
+          auctionsWon: 0,
+          activeBids: 0,
+          totalSpent: 0,
+        },
+      });
+
+      return newUser;
     });
 
     const tokens = {
@@ -38,9 +57,14 @@ export class AuthService {
       refreshToken: generateRefreshToken({ userId: user.id, email: user.email, role: user.role }),
     };
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken: tokens.refreshToken },
+    // Store refresh token in database
+    await prisma.userToken.create({
+      data: {
+        userId: user.id,
+        tokenType: "refresh",
+        tokenHash: hashToken(tokens.refreshToken),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      },
     });
 
     return { user: sanitizeUser(user), tokens };
@@ -62,47 +86,97 @@ export class AuthService {
       refreshToken: generateRefreshToken({ userId: user.id, email: user.email, role: user.role }),
     };
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken: tokens.refreshToken },
+    // Store refresh token in database
+    await prisma.userToken.create({
+      data: {
+        userId: user.id,
+        tokenType: "refresh",
+        tokenHash: hashToken(tokens.refreshToken),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
     });
 
     return { user: sanitizeUser(user), tokens };
   }
 
-  static async logout(userId: string): Promise<void> {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken: null },
-    });
+  static async logout(userId: number, token?: string): Promise<void> {
+    if (token) {
+      await prisma.userToken.deleteMany({
+        where: {
+          userId,
+          tokenHash: hashToken(token),
+        },
+      });
+    } else {
+      await prisma.userToken.deleteMany({
+        where: {
+          userId,
+          tokenType: "refresh",
+        },
+      });
+    }
   }
 
   static async refreshToken(token: string): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+    if (!token) {
+      throw new AppError(MESSAGES.AUTH.TOKEN_INVALID, HTTP_STATUS.UNAUTHORIZED);
+    }
+
     try {
       const decoded = verifyRefreshToken(token);
+      const tokenHash = hashToken(token);
 
-      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-      if (!user || !user.isActive || user.refreshToken !== token) {
+      // Check if refresh token exists in DB and is not expired
+      const storedToken = await prisma.userToken.findFirst({
+        where: {
+          tokenHash,
+          tokenType: "refresh",
+          userId: decoded.userId,
+          expiresAt: { gt: new Date() },
+        },
+        include: {
+          user: true,
+        },
+      });
+
+      if (!storedToken || !storedToken.user || !storedToken.user.isActive) {
         throw new AppError(MESSAGES.AUTH.TOKEN_INVALID, HTTP_STATUS.UNAUTHORIZED);
       }
 
+      // Generate new token pair (Rotation)
       const tokens = {
-        accessToken: generateAccessToken({ userId: user.id, email: user.email, role: user.role }),
-        refreshToken: generateRefreshToken({ userId: user.id, email: user.email, role: user.role }),
+        accessToken: generateAccessToken({
+          userId: storedToken.user.id,
+          email: storedToken.user.email,
+          role: storedToken.user.role,
+        }),
+        refreshToken: generateRefreshToken({
+          userId: storedToken.user.id,
+          email: storedToken.user.email,
+          role: storedToken.user.role,
+        }),
       };
 
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { refreshToken: tokens.refreshToken },
-      });
+      // In a transaction, delete old token and insert new one
+      await prisma.$transaction([
+        prisma.userToken.delete({ where: { id: storedToken.id } }),
+        prisma.userToken.create({
+          data: {
+            userId: storedToken.user.id,
+            tokenType: "refresh",
+            tokenHash: hashToken(tokens.refreshToken),
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          },
+        }),
+      ]);
 
-      return { user: sanitizeUser(user), tokens };
+      return { user: sanitizeUser(storedToken.user), tokens };
     } catch (error) {
       throw new AppError(MESSAGES.AUTH.TOKEN_INVALID, HTTP_STATUS.UNAUTHORIZED);
     }
   }
 
-  static async getUserProfile(userId: string): Promise<SafeUser> {
+  static async getUserProfile(userId: number): Promise<SafeUser> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.isActive) {
       throw new AppError(MESSAGES.USER.NOT_FOUND, HTTP_STATUS.NOT_FOUND);

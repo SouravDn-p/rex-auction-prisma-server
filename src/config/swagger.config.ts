@@ -1,6 +1,6 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import { authpaths } from "../app/modules/auth/doc/auth.swagger.ts";
-// import { usersPaths } from "../app/modules/users/docs/users.swagger.ts";
+import { usersPaths } from "../app/modules/users/doc/users.swagger.ts";
 
 export const swaggerSpec = swaggerJsdoc({
   definition: {
@@ -31,7 +31,7 @@ export const swaggerSpec = swaggerJsdoc({
 
     paths: {
       ...authpaths,
-      // ...usersPaths,
+      ...usersPaths,
     },
   },
 

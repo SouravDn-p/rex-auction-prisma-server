@@ -29,7 +29,8 @@ export class AuthController {
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (req.user) {
-        await AuthService.logout(req.user.userId);
+        const token = req.cookies?.refreshToken || req.body?.refreshToken;
+        await AuthService.logout(req.user.userId, token);
       }
       clearAuthCookies(res);
       sendSuccess(res, HTTP_STATUS.OK, MESSAGES.AUTH.LOGOUT_SUCCESS);
@@ -40,7 +41,7 @@ export class AuthController {
 
   async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const token = req.cookies.refreshToken || req.body.refreshToken;
+      const token = req.cookies?.refreshToken || req.body?.refreshToken;
       const { user, tokens } = await AuthService.refreshToken(token);
       setAuthCookies(res, tokens);
       sendSuccess(res, HTTP_STATUS.OK, MESSAGES.AUTH.TOKEN_REFRESHED, { user, accessToken: tokens.accessToken });

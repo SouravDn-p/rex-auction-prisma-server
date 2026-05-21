@@ -16,5 +16,5 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
-// What we send to clients — password and refreshToken always omitted
-export type SafeUser = Omit<User, 'password' | 'refreshToken'>;
+// What we send to clients — password always omitted
+export type SafeUser = Omit<User, 'password'>;
