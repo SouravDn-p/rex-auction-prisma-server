@@ -144,11 +144,11 @@ Once the server is running, the interactive Swagger UI is available at:
 
 | Endpoint | HTTP Method | Auth Required | Description | Request Body / Cookies |
 | :--- | :---: | :---: | :--- | :--- |
-| **/api/v1/auth/register** | `POST` | ❌ No | Creates a new user account, registers them in PostgreSQL, and generates access and refresh tokens. | **Body**: `{ name, email, password }`<br>**Sets Cookies**: `accessToken`, `refreshToken` |
-| **/api/v1/auth/login** | `POST` | ❌ No | Authenticates user credentials. Returns the sanitized user profile. | **Body**: `{ email, password }`<br>**Sets Cookies**: `accessToken`, `refreshToken` |
-| **/api/v1/auth/logout** | `POST` | 🔑 Yes | Revokes the current session refresh token in PostgreSQL and clears cookies on the client side. | **Headers**: `Authorization: Bearer <token>` OR **Cookies**: `accessToken` |
-| **/api/v1/auth/refresh-token** | `POST` | ❌ No | Rotates the refresh token session and issues a fresh set of authentication tokens. | **Cookies**: `refreshToken` OR **Body**: `{ refreshToken }`<br>**Sets Cookies**: `accessToken`, `refreshToken` (rotated) |
-| **/api/v1/auth/me** | `GET` | 🔑 Yes | Returns the profile data of the currently logged-in user. | **Headers**: `Authorization: Bearer <token>` OR **Cookies**: `accessToken` |
+| **/auth/register** | `POST` | ❌ No | Creates a new user account, registers them in PostgreSQL, and generates access and refresh tokens. | **Body**: `{ name, email, password }`<br>**Sets Cookies**: `accessToken`, `refreshToken` |
+| **/auth/login** | `POST` | ❌ No | Authenticates user credentials. Returns the sanitized user profile. | **Body**: `{ email, password }`<br>**Sets Cookies**: `accessToken`, `refreshToken` |
+| **/auth/logout** | `POST` | 🔑 Yes | Revokes the current session refresh token in PostgreSQL and clears cookies on the client side. | **Headers**: `Authorization: Bearer <token>` OR **Cookies**: `accessToken` |
+| **/auth/refresh-token** | `POST` | ❌ No | Rotates the refresh token session and issues a fresh set of authentication tokens. | **Cookies**: `refreshToken` OR **Body**: `{ refreshToken }`<br>**Sets Cookies**: `accessToken`, `refreshToken` (rotated) |
+| **/auth/me** | `GET` | 🔑 Yes | Returns the profile data of the currently logged-in user. | **Headers**: `Authorization: Bearer <token>` OR **Cookies**: `accessToken` |
 
 ---
 

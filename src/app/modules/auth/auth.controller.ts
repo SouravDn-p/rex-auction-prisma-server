@@ -4,6 +4,7 @@ import { HTTP_STATUS } from "../../common/constants/http-status.constants.ts";
 import { MESSAGES } from "../../common/constants/messages.constants.ts";
 import { AuthService } from "./auth.service.ts";
 import { setAuthCookies, clearAuthCookies } from "../../common/utils/cookie.util.ts";
+import passport from "../../../config/passport.config.ts";
 
 export class AuthController {
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -61,5 +62,27 @@ export class AuthController {
     } catch (error) {
       next(error);
     }
+  }
+
+
+  // Google OAuth handlers will go here (e.g., googleAuth, googleAuthCallback)
+  async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
+    })(req, res, next);
+  }
+
+  async googleCallback (req: Request, res: Response, next: NextFunction): Promise<void> {
+    passport.authenticate("google", (err: any, user: any) => {
+      if (err || !user) {
+        return res.redirect("/login");
+      }
+
+      req.logIn(user, (err) => {
+        if (err) return next(err);
+
+        return res.redirect("/dashboard");
+      });
+    })(req, res, next);
   }
 }

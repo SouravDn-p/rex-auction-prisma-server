@@ -9,6 +9,9 @@ import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger.config.ts";
 import authRouter from "./app/modules/auth/auth.modules.ts"
 import { errorHandler } from "./app/common/exceptions/error-handler.exeption.ts";
+import passport from "./config/passport.config.ts";
+import session from "express-session";
+import usersRouter from "./app/modules/users/users.modules.ts";
 
 export const CreateApp  = () : Application =>{
     const app : Application = express();
@@ -25,6 +28,14 @@ export const CreateApp  = () : Application =>{
         })
     );
 
+    app.use(
+    session({
+    secret: process.env.SESSION_SECRET as string,
+    resave: false,
+    saveUninitialized: false,
+    })
+  );
+
       // ─── Rate Limiting ───────────────────────────────────────────────────────────
     app.use(rateLimit({
         windowMs: 15 * 60 * 1000,
@@ -39,6 +50,9 @@ export const CreateApp  = () : Application =>{
         max: 10,
         message: { success: false, message: 'Too many auth attempts, please try again later' },
     });
+
+    app.use(passport.initialize());
+    app.use(passport.session());
 
     // ─── Body Parsers ────────────────────────────────────────────────────────────
     app.use(express.json({ limit: '10kb' }));      
@@ -61,7 +75,8 @@ export const CreateApp  = () : Application =>{
     );
 
     // ─── Routes ──────────────────────────────────────────────────────────────────
-  app.use('/api/v1/auth', authLimiter, authRouter);
+  app.use('/auth', authLimiter, authRouter);
+  app.use('/users', usersRouter);
 
   app.get("/", (req: Request, res: Response) => {
     res.send("WellCome to Rex Auction Server ");
