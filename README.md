@@ -115,11 +115,14 @@ npx prisma db push
 
 ## 🔒 Authentication Flow & Cookie Mechanics
 
-The server implements a state-of-the-art authentication mechanism:
-1.  **Register/Login**: On successful authentication, the server generates both an `accessToken` (short-lived) and a `refreshToken` (long-lived).
-2.  **HTTP-Only Cookies**:
+The server implements a state-of-the-art authentication mechanism supporting both **Local Login** and **Google OAuth**. For full details, see the dedicated [**Authentication System Documentation**](./AUTH.md).
+
+1.  **Dual Authentication Providers**:
+    *   **Local Auth**: Standard encrypted Email/Password registration and login.
+    *   **Google OAuth**: Seamless one-click login using `passport-google-oauth20` that dynamically links or creates user accounts.
+2.  **JWT & HTTP-Only Cookies**:
     *   `accessToken` and `refreshToken` are set in the response headers as `HttpOnly`, `Secure` (in production), and `SameSite=Lax` cookies.
-    *   This blocks Javascript scripts from accessing the tokens, eliminating modern XSS theft vectors.
+    *   This completely blocks frontend JavaScript from accessing the tokens, eliminating modern XSS theft vectors.
 3.  **Authentication Middleware (`protect`)**:
     *   Automatically parses incoming cookies or `Authorization: Bearer <token>` headers.
     *   Validates the integrity of the JWT.
@@ -146,6 +149,8 @@ Once the server is running, the interactive Swagger UI is available at:
 | :--- | :---: | :---: | :--- | :--- |
 | **/auth/register** | `POST` | ❌ No | Creates a new user account, registers them in PostgreSQL, and generates access and refresh tokens. | **Body**: `{ name, email, password }`<br>**Sets Cookies**: `accessToken`, `refreshToken` |
 | **/auth/login** | `POST` | ❌ No | Authenticates user credentials. Returns the sanitized user profile. | **Body**: `{ email, password }`<br>**Sets Cookies**: `accessToken`, `refreshToken` |
+| **/auth/google** | `GET` | ❌ No | Initiates the Google OAuth consent flow. | **Redirects** to Google |
+| **/auth/google/callback** | `GET` | ❌ No | Google OAuth callback URL. Generates/Updates user and redirect to frontend dashboard. | **Sets Cookies**: `accessToken`, `refreshToken` |
 | **/auth/logout** | `POST` | 🔑 Yes | Revokes the current session refresh token in PostgreSQL and clears cookies on the client side. | **Headers**: `Authorization: Bearer <token>` OR **Cookies**: `accessToken` |
 | **/auth/refresh-token** | `POST` | ❌ No | Rotates the refresh token session and issues a fresh set of authentication tokens. | **Cookies**: `refreshToken` OR **Body**: `{ refreshToken }`<br>**Sets Cookies**: `accessToken`, `refreshToken` (rotated) |
 | **/auth/me** | `GET` | 🔑 Yes | Returns the profile data of the currently logged-in user. | **Headers**: `Authorization: Bearer <token>` OR **Cookies**: `accessToken` |

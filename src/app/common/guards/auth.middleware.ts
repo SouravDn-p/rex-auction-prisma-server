@@ -70,7 +70,8 @@ export const restrictTo = (...roles: string[]) => {
       );
     }
 
-    if (!roles.includes(req.user.role)) {
+    const user = req.user as any;
+    if (!roles.includes(user.role)) {
       return next(
         new AppError(MESSAGES.AUTH.FORBIDDEN, HTTP_STATUS.FORBIDDEN)
       );

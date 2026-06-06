@@ -30,8 +30,9 @@ export class AuthController {
   async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (req.user) {
+        const user = req.user as any;
         const token = req.cookies?.refreshToken || req.body?.refreshToken;
-        await AuthService.logout(req.user.userId, token);
+        await AuthService.logout(user.userId, token);
       }
       clearAuthCookies(res);
       sendSuccess(res, HTTP_STATUS.OK, MESSAGES.AUTH.LOGOUT_SUCCESS);
@@ -57,8 +58,9 @@ export class AuthController {
         sendSuccess(res, HTTP_STATUS.UNAUTHORIZED, MESSAGES.AUTH.UNAUTHORIZED);
         return;
       }
-      const user = await AuthService.getUserProfile(req.user.userId);
-      sendSuccess(res, HTTP_STATUS.OK, MESSAGES.USER.FETCHED, { user });
+      const user = req.user as any;
+      const userProfile = await AuthService.getUserProfile(user.userId);
+      sendSuccess(res, HTTP_STATUS.OK, MESSAGES.USER.FETCHED, { user: userProfile });
     } catch (error) {
       next(error);
     }
@@ -72,17 +74,19 @@ export class AuthController {
     })(req, res, next);
   }
 
-  async googleCallback (req: Request, res: Response, next: NextFunction): Promise<void> {
-    passport.authenticate("google", (err: any, user: any) => {
-      if (err || !user) {
-        return res.redirect("/login");
+  async googleCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
+    passport.authenticate("google", { session: false }, async (err: any, profile: any) => {
+      if (err || !profile) {
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
       }
 
-      req.logIn(user, (err) => {
-        if (err) return next(err);
-
-        return res.redirect("/dashboard");
-      });
+      try {
+        const { tokens } = await AuthService.googleLogin(profile);
+        setAuthCookies(res, tokens);
+        return res.redirect(`${process.env.FRONTEND_URL}?success=true`);
+      } catch (error) {
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+      }
     })(req, res, next);
   }
 }

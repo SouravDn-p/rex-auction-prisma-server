@@ -1,9 +1,11 @@
-import { type TokenPayload } from '../app/common/utils/jwt.util.ts';
+/// <reference types="express" />
 
 declare global {
   namespace Express {
-    interface Request {
-      user?: TokenPayload;
+    interface User {
+      userId: number;
+      email: string;
+      role: string;
     }
   }
 }

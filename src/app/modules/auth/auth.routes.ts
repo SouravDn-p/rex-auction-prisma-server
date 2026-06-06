@@ -17,6 +17,6 @@ router.get('/me', protect, (req, res, next) => authController.getProfile(req, re
 
 // Google OAuth routes
 router.get('/google', authController.googleAuth);
-router.get('/google/callback', passport.authenticate('google', { session: false }), (req, res, next) => authController.googleCallback(req, res, next));
+router.get('/google/callback', (req, res, next) => authController.googleCallback(req, res, next));
 
 export default router;

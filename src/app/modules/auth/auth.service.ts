@@ -183,4 +183,89 @@ export class AuthService {
     }
     return sanitizeUser(user);
   }
+
+  static async googleLogin(profile: any): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+    const { googleId, name, email, avatar } = profile;
+
+    let user = await prisma.user.findFirst({
+      // where: {
+      //   OR: [
+      //     { providerId: googleId, provider: "google" },
+      //     { email: email }
+      //   ]
+      // }
+      where: {
+        provider: "google",
+        providerId: googleId,
+      },
+    });
+
+    if (!user) {
+      const existingEmailUser = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingEmailUser) {
+        throw new AppError(
+          "This email is already registered. Please try login again using email and password.",
+          HTTP_STATUS.UNAUTHORIZED
+        );
+      }
+
+      const hashedPassword = await bcryptjs.hash(crypto.randomBytes(16).toString("hex"), 12);
+      user = await prisma.$transaction(async (tx) => {
+        const newUser = await tx.user.create({
+          data: {
+            name: name,
+            email: email,
+            password: hashedPassword,
+            provider: "google",
+            providerId: googleId,
+            photo: avatar,
+          },
+        });
+
+        await tx.userStats.create({
+          data: {
+            userId: newUser.id,
+            accountBalance: 0,
+            auctionsWon: 0,
+            activeBids: 0,
+            totalSpent: 0,
+          },
+        });
+
+        return newUser;
+      });
+    } else if (user.provider !== "google" || user.providerId !== googleId) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          provider: "google",
+          providerId: googleId,
+          ...(user.photo ? {} : { photo: avatar })
+        }
+      });
+    }
+
+    if (!user.isActive) {
+      throw new AppError(MESSAGES.AUTH.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    const tokens = {
+      accessToken: generateAccessToken({ userId: user.id, email: user.email, role: user.role }),
+      refreshToken: generateRefreshToken({ userId: user.id, email: user.email, role: user.role }),
+    };
+
+    await prisma.userToken.create({
+      data: {
+        userId: user.id,
+        tokenType: "refresh",
+        tokenHash: hashToken(tokens.refreshToken),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    return { user: sanitizeUser(user), tokens };
+  }
 }

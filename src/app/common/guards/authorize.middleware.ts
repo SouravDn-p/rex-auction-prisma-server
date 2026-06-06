@@ -5,7 +5,8 @@ import { AppError } from "../exceptions/app-error.exception.ts";
 
 export const authorize = (...roles: string[]) => {
   return (req: Request, _res: Response, next: NextFunction): void => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    const user = req.user as any;
+    if (!req.user || !roles.includes(user.role)) {
       throw new AppError(MESSAGES.AUTH.FORBIDDEN, HTTP_STATUS.FORBIDDEN);
     }
     next();
