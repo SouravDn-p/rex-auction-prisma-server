@@ -4,6 +4,7 @@ export interface RegisterDto {
   name: string;
   email: string;
   password: string;
+  image?: File | null;
 }
 
 export interface LoginDto {

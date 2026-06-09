@@ -23,6 +23,10 @@ const sanitizeUser = (user: User): SafeUser => {
 
 export class AuthService {
   static async register(dto: RegisterDto): Promise<{ user: SafeUser; tokens: AuthTokens }> {
+
+    if (dto.image) {
+      // Handle image upload logic here
+    }
     const exists = await prisma.user.findUnique({ where: { email: dto.email } });
     if (exists) {
       throw new AppError(MESSAGES.AUTH.EMAIL_EXISTS, HTTP_STATUS.CONFLICT);
