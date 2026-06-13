@@ -3,7 +3,7 @@ export const activitiesPath = {
       summary: "Get user activity logs",
       description: "Retrieve paginated history of security, bidding, and account events.",
       tags: ["Users"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       parameters: [
         { name: "page", in: "query", schema: { type: "integer", default: 1 }, description: "Page number" },
         { name: "limit", in: "query", schema: { type: "integer", default: 20 }, description: "Items per page" }

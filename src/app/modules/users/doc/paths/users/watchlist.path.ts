@@ -3,7 +3,7 @@ export const watchlistPath = {
       summary: "Get user watchlist",
       description: "Fetch list of auctions the user has favorited/watched.",
       tags: ["Users"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       responses: {
         200: {
           description: "Watchlist retrieved successfully",
@@ -53,7 +53,7 @@ export const watchlistPath = {
       summary: "Add auction to watchlist (body)",
       description: "Add an auction by supplying `auctionId` in the body payload.",
       tags: ["Users"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       requestBody: {
         required: true,
         content: {

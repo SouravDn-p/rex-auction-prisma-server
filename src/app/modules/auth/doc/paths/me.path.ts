@@ -5,7 +5,7 @@ export const mePath = {
       tags: ["Auth"],
       security: [
         {
-          bearerAuth: []
+          cookieAuth: []
         }
       ],
       responses: {

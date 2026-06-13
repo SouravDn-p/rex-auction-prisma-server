@@ -12,7 +12,7 @@ export const validateDto = (schema: Joi.ObjectSchema) => {
 
     if (error) {
       const message = error.details.map((d) => d.message.replace(/"/g, '')).join(', ');
-      throw new AppError(message, HTTP_STATUS.BAD_REQUEST);
+      return next(new AppError(message, HTTP_STATUS.BAD_REQUEST));
     }
 
     req.body = value; // use the sanitized/cast value

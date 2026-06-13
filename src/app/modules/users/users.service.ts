@@ -2,16 +2,14 @@ import { prisma } from "../../../config/db/database.config.ts";
 import { HTTP_STATUS } from "../../common/constants/http-status.constants.ts";
 import { MESSAGES } from "../../common/constants/messages.constants.ts";
 import { AppError } from "../../common/exceptions/app-error.exception.ts";
+import { invalidateUserCache } from "../../common/guards/auth.middleware.ts";
 import type {
   UpdateUserDto,
   SubmitSellerRequestDto,
 } from "./interfaces/users.interface.ts";
-import { SellerRequestStatus } from "@prisma/client";
+import { Prisma, SellerRequestStatus, UserRole } from "@prisma/client";
 
 export class UsersService {
-  /**
-   * Get user profile by ID
-   */
   static async getUserProfile(userId: number) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -23,9 +21,6 @@ export class UsersService {
     return safeUser;
   }
 
-  /**
-   * Update user profile information
-   */
   static async updateUserProfile(userId: number, dto: UpdateUserDto) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -35,7 +30,12 @@ export class UsersService {
     const updatedUser = await prisma.$transaction(async (tx) => {
       const u = await tx.user.update({
         where: { id: userId },
-        data: dto,
+        data: {
+          ...(dto.name !== undefined ? { name: dto.name } : {}),
+          ...(dto.photo !== undefined ? { photo: dto.photo || null } : {}),
+          ...(dto.cover !== undefined ? { cover: dto.cover || null } : {}),
+          ...(dto.location !== undefined ? { location: dto.location || null } : {}),
+        },
       });
 
       await tx.userActivity.create({
@@ -43,7 +43,7 @@ export class UsersService {
           userId,
           activityType: "profile_updated",
           description: "Updated profile details",
-          metadata: dto as any,
+          metadata: dto as Prisma.InputJsonValue,
         },
       });
 
@@ -54,9 +54,6 @@ export class UsersService {
     return safeUser;
   }
 
-  /**
-   * Get or initialize user statistics
-   */
   static async getUserStats(userId: number) {
     let stats = await prisma.userStats.findUnique({ where: { userId } });
     if (!stats) {
@@ -73,9 +70,6 @@ export class UsersService {
     return stats;
   }
 
-  /**
-   * Get activity history of a user
-   */
   static async getUserActivities(userId: number, limit = 50, page = 1) {
     const skip = (page - 1) * limit;
     const [activities, total] = await Promise.all([
@@ -91,9 +85,6 @@ export class UsersService {
     return { activities, total, page, limit };
   }
 
-  /**
-   * Get user's watchlist with auction and seller details
-   */
   static async getWatchlist(userId: number) {
     return prisma.watchlist.findMany({
       where: { userId },
@@ -115,9 +106,6 @@ export class UsersService {
     });
   }
 
-  /**
-   * Add an auction to the user's watchlist
-   */
   static async addToWatchlist(userId: number, auctionId: number) {
     const auction = await prisma.auction.findUnique({ where: { id: auctionId } });
     if (!auction) {
@@ -151,9 +139,6 @@ export class UsersService {
     return watchlist;
   }
 
-  /**
-   * Remove an auction from the user's watchlist
-   */
   static async removeFromWatchlist(userId: number, auctionId: number) {
     const existing = await prisma.watchlist.findUnique({
       where: { userId_auctionId: { userId, auctionId } },
@@ -167,9 +152,6 @@ export class UsersService {
     });
   }
 
-  /**
-   * Fetch transaction list for a user
-   */
   static async getTransactions(userId: number) {
     return prisma.transaction.findMany({
       where: { userId },
@@ -177,9 +159,6 @@ export class UsersService {
     });
   }
 
-  /**
-   * Submit a new request to become a seller
-   */
   static async submitSellerRequest(userId: number, dto: SubmitSellerRequestDto) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -225,7 +204,9 @@ export class UsersService {
   }
 
   /**
-   * ADMIN: Review and approve/reject a seller request
+   * ADMIN: Review and approve/reject a seller request.
+   * On approval, promotes user to SELLER and invalidates their auth cache
+   * so the role change takes effect immediately.
    */
   static async adminReviewSellerRequest(
     adminId: number,
@@ -274,12 +255,13 @@ export class UsersService {
       return r;
     });
 
+    if (status === "approved") {
+      await invalidateUserCache(request.userId);
+    }
+
     return updatedRequest;
   }
 
-  /**
-   * ADMIN: Fetch all seller requests with status filter
-   */
   static async adminGetAllSellerRequests(limit = 50, page = 1, status?: SellerRequestStatus) {
     const skip = (page - 1) * limit;
     const where = status ? { status } : {};
@@ -314,18 +296,22 @@ export class UsersService {
   }
 
   /**
-   * ADMIN: List all users with pagination and search
+   * ADMIN: List all users with pagination, search, and optional role filter
    */
-  static async adminGetAllUsers(limit = 50, page = 1, search?: string) {
+  static async adminGetAllUsers(limit = 50, page = 1, search?: string, role?: UserRole) {
     const skip = (page - 1) * limit;
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: "insensitive" as const } },
-            { email: { contains: search, mode: "insensitive" as const } },
-          ],
-        }
-      : {};
+
+    const where: Prisma.UserWhereInput = {
+      ...(role ? { role } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { email: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    };
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -336,6 +322,7 @@ export class UsersService {
           email: true,
           role: true,
           isActive: true,
+          emailVerified: true,
           createdAt: true,
           updatedAt: true,
           photo: true,
@@ -353,7 +340,9 @@ export class UsersService {
   }
 
   /**
-   * ADMIN: Activate or deactivate a user
+   * ADMIN: Activate or deactivate a user.
+   * Invalidates the user's auth cache so the status change is enforced
+   * on their very next request, not after the 60s cache TTL.
    */
   static async adminUpdateUserStatus(adminId: number, targetUserId: number, isActive: boolean) {
     if (adminId === targetUserId) {
@@ -363,6 +352,10 @@ export class UsersService {
     const user = await prisma.user.findUnique({ where: { id: targetUserId } });
     if (!user) {
       throw new AppError(MESSAGES.USER.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+    }
+
+    if (user.role === "ADMIN") {
+      throw new AppError("Cannot change active status of an admin account", HTTP_STATUS.FORBIDDEN);
     }
 
     const updatedUser = await prisma.user.update({
@@ -376,6 +369,15 @@ export class UsersService {
         isActive: true,
       },
     });
+
+    await invalidateUserCache(targetUserId);
+
+    // Deactivation: also revoke all sessions so they can't keep using existing access tokens
+    if (!isActive) {
+      await prisma.userToken.deleteMany({
+        where: { userId: targetUserId, tokenType: "refresh" },
+      });
+    }
 
     return updatedUser;
   }

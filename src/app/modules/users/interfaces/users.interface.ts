@@ -2,9 +2,9 @@ import { SellerRequestStatus } from "@prisma/client";
 
 export interface UpdateUserDto {
   name?: string;
-  photo?: string;
-  cover?: string;
-  location?: string;
+  photo?: string | null;
+  cover?: string | null;
+  location?: string | null;
 }
 
 export interface SubmitSellerRequestDto {

@@ -5,7 +5,7 @@ export const logoutPath = {
       tags: ["Auth"],
       security: [
         {
-          bearerAuth: []
+          cookieAuth: []
         }
       ],
       responses: {

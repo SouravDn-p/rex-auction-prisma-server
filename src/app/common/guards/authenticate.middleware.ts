@@ -6,13 +6,8 @@ import { verifyAccessToken } from '../utils/jwt.util.ts';
 
 export const authenticate = (req: Request, _res: Response, next: NextFunction): void => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies?.accessToken;
 
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new AppError(MESSAGES.AUTH.UNAUTHORIZED, HTTP_STATUS.UNAUTHORIZED);
-    }
-
-    const token = authHeader.split(' ')[1];
     if (!token) {
       throw new AppError(MESSAGES.AUTH.UNAUTHORIZED, HTTP_STATUS.UNAUTHORIZED);
     }

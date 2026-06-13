@@ -5,7 +5,7 @@ export const registerDto = Joi.object({
   email: Joi.string().trim().email().lowercase().required(),
   password: Joi.string()
     .min(8)
-    .max(72) // bcrypt hard limit
+    .max(72)
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
     .required()
     .messages({

@@ -9,22 +9,24 @@ export const swaggerSpec = swaggerJsdoc({
     info: {
       title: "MVC API Documentation",
       version: "1.0.0",
-      description: "Production Ready Node.js MVC API Documentation featuring full Session Auth and User Profiles.",
+      description:
+        "Production Ready Node.js MVC API Documentation. Authentication uses HttpOnly cookies (accessToken, refreshToken) — tokens are never returned in JSON responses.",
     },
 
     servers: [
       {
-        url: "http://localhost:5000",
+        url: "http://localhost:5000/api/v1",
         description: "Development Server",
       },
     ],
 
     components: {
       securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
+        cookieAuth: {
+          type: "apiKey",
+          in: "cookie",
+          name: "accessToken",
+          description: "HttpOnly access token cookie set on login / verify-email / refresh",
         },
       },
     },

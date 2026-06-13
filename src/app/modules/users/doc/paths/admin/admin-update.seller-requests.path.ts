@@ -3,7 +3,7 @@ export const adminUpdateSellerRequestsPath = {
       summary: "ADMIN: Review seller request",
       description: "Approve or reject a pending request to become a seller. Approving automatically updates the user's role to SELLER.",
       tags: ["Admin (Users)"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       parameters: [
         { name: "requestId", in: "path", required: true, schema: { type: "integer" }, description: "The seller request ID" }
       ],

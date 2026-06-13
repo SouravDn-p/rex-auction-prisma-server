@@ -3,7 +3,7 @@ export const getWatchlistAuctionIdPath = {
       summary: "Add auction to watchlist (param)",
       description: "Add an auction directly via path parameter.",
       tags: ["Users"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       parameters: [
         { name: "auctionId", in: "path", required: true, schema: { type: "integer" }, description: "The auction ID" }
       ],
@@ -17,7 +17,7 @@ export const getWatchlistAuctionIdPath = {
       summary: "Remove auction from watchlist",
       description: "Remove an auction from watchlist via path parameter.",
       tags: ["Users"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       parameters: [
         { name: "auctionId", in: "path", required: true, schema: { type: "integer" }, description: "The auction ID" }
       ],

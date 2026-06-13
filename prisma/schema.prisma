@@ -93,6 +93,13 @@ enum TransactionType {
   service_fee
 }
 
+enum AutoBidStatus {
+  active
+  outbid_exceeded
+  cancelled
+  won
+}
+
 // =============================================
 // USERS & IDENTITY
 // =============================================
@@ -106,7 +113,8 @@ model User {
   cover     String?
   role      UserRole     @default(USER)
   location  String?
-  isActive  Boolean      @default(true)
+  isActive       Boolean      @default(true)
+  emailVerified  Boolean      @default(false)
   provider  AuthProvider @default(local)
   providerId String?     @db.VarChar(255)
   createdAt DateTime     @default(now())
@@ -122,8 +130,11 @@ model User {
   reviewedRequests  SellerRequest[]    @relation("SellerRequestReviewer")
   tokens            UserToken[]
   auctions          Auction[]
+
   liveBids          LiveBid[]
+  autoBids          AutoBid[]
   endedAuctionWins  EndedAuction[]
+
   payments          Payment[]
   sentMessages      Message[]          @relation("MessageSender")
   receivedMessages  Message[]          @relation("MessageReceiver")
@@ -283,7 +294,10 @@ model Auction {
   updatedAt      DateTime      @updatedAt
 
   seller        User              @relation(fields: [sellerId], references: [id])
+
   liveBids      LiveBid[]
+  autoBids      AutoBid[]
+  
   endedAuction  EndedAuction?
   payments      Payment[]
   watchlists    Watchlist[]
@@ -315,6 +329,25 @@ model LiveBid {
   @@index([auctionId])
   @@index([createdAt])
   @@map("live_bids")
+}
+
+model AutoBid {
+  id            Int           @id @default(autoincrement())
+  auctionId     Int
+  userId        Int
+  maxBid        Decimal       @db.Decimal(12, 2)
+  incrementStep Decimal       @db.Decimal(12, 2)
+  status        AutoBidStatus @default(active)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  auction Auction @relation(fields: [auctionId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([auctionId, userId])
+  @@index([auctionId, status])
+  @@index([userId])
+  @@map("auto_bids")
 }
 
 model EndedAuction {

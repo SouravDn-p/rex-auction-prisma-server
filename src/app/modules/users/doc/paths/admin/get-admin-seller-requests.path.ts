@@ -3,7 +3,7 @@ export const getAdminSellerRequestsPath = {
       summary: "ADMIN: Fetch seller requests",
       description: "Get list of all submitted seller requests. Filter by status if requested.",
       tags: ["Admin (Users)"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       parameters: [
         { name: "page", in: "query", schema: { type: "integer", default: 1 } },
         { name: "limit", in: "query", schema: { type: "integer", default: 20 } },

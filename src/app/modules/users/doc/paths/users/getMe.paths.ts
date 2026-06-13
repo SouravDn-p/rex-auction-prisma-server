@@ -3,7 +3,7 @@ export const getMePath = {
       summary: "Get current user profile",
       description: "Retrieve complete profile information for the authenticated user.",
       tags: ["Users"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       responses: {
         200: {
           description: "Profile retrieved successfully",
@@ -47,7 +47,7 @@ export const getMePath = {
       summary: "Update user profile",
       description: "Update name, profile image, cover photo, or location of the authenticated user.",
       tags: ["Users"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       requestBody: {
         required: true,
         content: {

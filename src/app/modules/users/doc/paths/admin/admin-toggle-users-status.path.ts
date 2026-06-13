@@ -3,7 +3,7 @@ export const adminToggleUsersStatusPath = {
       summary: "ADMIN: Toggle user status",
       description: "Deactivate or reactivate a user account. Deactivated users cannot log in.",
       tags: ["Admin (Users)"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       parameters: [
         { name: "userId", in: "path", required: true, schema: { type: "integer" }, description: "The target user ID" }
       ],
@@ -51,7 +51,7 @@ export const adminToggleUsersStatusPath = {
             }
           }
         },
-        400: { description: "Cannot deactivate own admin account" },
+        400: { description: "Cannot update your own active status" },
         401: { description: "Unauthorized" },
         403: { description: "Forbidden - Admin access required" },
         404: { description: "User not found" }

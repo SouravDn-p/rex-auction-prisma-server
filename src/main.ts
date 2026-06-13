@@ -1,10 +1,12 @@
 import { CreateApp } from './app.ts';
+import { initWorkers } from './app/common/jobs/index.ts';
 import { logger } from './app/common/utils/logger.util.ts';
 import { connectDatabase, disconnectDatabase } from './config/db/database.config.ts';
 import { ENV } from './config/env.config.ts';
 
 const startServer = async (): Promise<void> => {
   await connectDatabase();
+  await initWorkers();
 
   const app = CreateApp();
   const server = app.listen(ENV.PORT, () => {

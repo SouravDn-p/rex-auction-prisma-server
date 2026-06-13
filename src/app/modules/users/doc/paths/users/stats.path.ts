@@ -3,7 +3,7 @@ export const statsPath = {
       summary: "Get user statistics",
       description: "Retrieve account balance, auctions won count, active bids, and total spent stats.",
       tags: ["Users"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       responses: {
         200: {
           description: "Stats retrieved successfully",

@@ -3,11 +3,12 @@ export const adminGetUsersPath = {
       summary: "ADMIN: Fetch all users",
       description: "List all users on the platform. Accessible only by accounts with ADMIN role.",
       tags: ["Admin (Users)"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       parameters: [
         { name: "page", in: "query", schema: { type: "integer", default: 1 }, description: "Page number" },
         { name: "limit", in: "query", schema: { type: "integer", default: 20 }, description: "Items per page" },
-        { name: "search", in: "query", schema: { type: "string" }, description: "Search query for name or email" }
+        { name: "search", in: "query", schema: { type: "string" }, description: "Search query for name or email" },
+        { name: "role", in: "query", schema: { type: "string", enum: ["USER", "SELLER", "ADMIN"] }, description: "Filter by user role" }
       ],
       responses: {
         200: {

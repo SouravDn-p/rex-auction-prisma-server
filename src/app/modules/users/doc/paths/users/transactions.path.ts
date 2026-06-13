@@ -3,7 +3,7 @@ export const transactionsPath = {
       summary: "Get user transaction logs",
       description: "Fetch full financial transactions (deposits, withdrawals, bid locks, etc.) history.",
       tags: ["Users"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       responses: {
         200: {
           description: "Transactions retrieved successfully",

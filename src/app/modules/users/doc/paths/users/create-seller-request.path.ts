@@ -3,7 +3,7 @@ export const createSellerRequestPath = {
       summary: "Apply for seller status",
       description: "Submit request to become an authorized seller on the platform, providing business parameters.",
       tags: ["Users"],
-      security: [{ bearerAuth: [] }],
+      security: [{ cookieAuth: [] }],
       requestBody: {
         required: true,
         content: {
