@@ -1,6 +1,10 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import { authpaths } from "../app/modules/auth/doc/auth.swagger.ts";
 import { usersPaths } from "../app/modules/users/doc/users.swagger.ts";
+import { auctionsPaths } from "../app/modules/auctions/doc/auctions.swagger.ts";
+import { biddingPaths } from "../app/modules/bidding/doc/bidding.swagger.ts";
+import { blogPaths } from "../app/modules/blog/doc/blog.swagger.ts";
+import { announcementsPaths } from "../app/modules/announcements/doc/announcements.swagger.ts";
 
 export const swaggerSpec = swaggerJsdoc({
   definition: {
@@ -34,6 +38,10 @@ export const swaggerSpec = swaggerJsdoc({
     paths: {
       ...authpaths,
       ...usersPaths,
+      ...auctionsPaths,
+      ...biddingPaths,
+      ...blogPaths,
+      ...announcementsPaths,
     },
   },
 

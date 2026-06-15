@@ -31,11 +31,20 @@ export const ENV = {
 
   SESSION_SECRET: required('SESSION_SECRET'),
 
+
+  //brevo api key and email config
   BREVO_API_KEY: required('BREVO_API_KEY'),
   MAIL_FROM: required('MAIL_FROM'),
   MAIL_FROM_NAME: process.env.MAIL_FROM_NAME || 'Rex Auction',
 
   REDIS_URL: process.env.REDIS_URL!,
+
+
+  SSLCOMMERZ_STORE_ID: required('SSLCOMMERZ_STORE_ID'),
+  SSLCOMMERZ_STORE_PASSWORD: required('SSLCOMMERZ_STORE_PASSWORD'),
+  SSLCOMMERZ_IS_LIVE: process.env.SSLCOMMERZ_IS_LIVE === 'true',
+  
+  //otp config
 
   OTP_EXPIRES_MIN: Number(process.env.OTP_EXPIRES_MIN) || 10,
 };

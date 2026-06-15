@@ -458,29 +458,39 @@ model Announcement {
   title     String    @db.VarChar(255)
   content   String
   image     String?
+  isActive  Boolean   @default(true)
   date      DateTime?
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   author User @relation(fields: [userId], references: [id])
 
+  @@index([isActive, createdAt])
   @@map("announcements")
 }
 
 model Blog {
-  id          Int      @id @default(autoincrement())
-  title       String   @db.VarChar(255)
+  id          Int        @id @default(autoincrement())
+  title       String     @db.VarChar(255)
+  slug        String     @unique @db.VarChar(300)
   authorId    Int
   imageUrls   String[]
+  excerpt     String?    @db.VarChar(500)
   fullContent String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isPublished Boolean    @default(false)
+  viewCount   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   author User      @relation(fields: [authorId], references: [id])
   tags   BlogTag[]
 
   @@index([authorId])
+  @@index([isPublished, createdAt])
+  @@index([slug])
   @@map("blogs")
 }
+
 
 model BlogTag {
   id     Int    @id @default(autoincrement())

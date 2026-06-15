@@ -85,3 +85,29 @@ export const restrictTo = (...roles: string[]) => {
     next();
   };
 };
+
+export const optionalProtect = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const token = req.cookies?.accessToken;
+    if (!token) return next();
+
+    const decoded = verifyAccessToken(token);
+    const user = await getCachedUser(decoded.userId);
+
+    if (user?.isActive) {
+      req.user = {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      };
+    }
+
+    next();
+  } catch {
+    next();
+  }
+};

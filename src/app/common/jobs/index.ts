@@ -1,5 +1,6 @@
 import './email.processor.ts';
 import './token-cleanup.processor.ts';
+import './auction.processor.ts';
 import { registerRepeatableJobs } from './scheduler.ts';
 import { logger } from '../utils/logger.util.ts';
 

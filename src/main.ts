@@ -3,16 +3,20 @@ import { initWorkers } from './app/common/jobs/index.ts';
 import { logger } from './app/common/utils/logger.util.ts';
 import { connectDatabase, disconnectDatabase } from './config/db/database.config.ts';
 import { ENV } from './config/env.config.ts';
+import { initSocketIO } from './services/sockets/index.ts';
 
 const startServer = async (): Promise<void> => {
   await connectDatabase();
-  await initWorkers();
 
   const app = CreateApp();
   const server = app.listen(ENV.PORT, () => {
     logger.info(`Server running in ${ENV.NODE_ENV} mode on port http://localhost:${ENV.PORT}`);
     logger.info("Swagger UI available at: http://localhost:5000/api/docs");
   });
+
+
+  initSocketIO(server);
+  await initWorkers();
   
 
   const shutdown = async (signal: string) => {

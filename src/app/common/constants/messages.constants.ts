@@ -49,4 +49,28 @@ export const MESSAGES = {
       AUTOBID_SET: 'Auto-bid configured successfully',
       AUTOBID_CANCELLED: 'Auto-bid cancelled successfully',
     },
+    BLOG: {
+      NOT_FOUND: 'Blog post not found',
+      CREATED: 'Blog post created successfully',
+      UPDATED: 'Blog post updated successfully',
+      DELETED: 'Blog post deleted successfully',
+      PUBLISHED: 'Blog post published successfully',
+      UNPUBLISHED: 'Blog post unpublished successfully',
+    },
+    ANNOUNCEMENT: {
+      NOT_FOUND: 'Announcement not found',
+      CREATED: 'Announcement created successfully',
+      UPDATED: 'Announcement updated successfully',
+      DELETED: 'Announcement deleted successfully',
+    },
+    PAYMENT: {
+      INITIATED: 'Payment session initiated. Redirecting to payment gateway.',
+      NOT_FOUND: 'Payment record not found',
+      ALREADY_PAID: 'This auction has already been paid for',
+      AUCTION_NOT_WON: 'You are not the winner of this auction',
+      AUCTION_NOT_ENDED: 'This auction has not ended yet',
+      INVALID_SIGNATURE: 'Payment verification failed — invalid signature',
+      SUCCESS: 'Payment completed successfully',
+      FAILED: 'Payment failed or was cancelled',
+    },
   } as const;

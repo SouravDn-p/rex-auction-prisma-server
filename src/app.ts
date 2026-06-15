@@ -11,6 +11,10 @@ import authRouter from "./app/modules/auth/auth.modules.ts"
 import { errorHandler } from "./app/common/exceptions/error-handler.exeption.ts";
 import passport from "./config/passport.config.ts";
 import usersRouter from "./app/modules/users/users.modules.ts";
+import auctionsRouter from "./app/modules/auctions/auctions.routes.ts";
+import biddingRouter from "./app/modules/bidding/bidding.routes.ts";
+import blogRouter from "./app/modules/blog/blog.routes.ts";
+import announcementsRouter from "./app/modules/announcements/announcements.routes.ts";
 
 export const CreateApp = (): Application => {
     const app: Application = express();
@@ -63,6 +67,10 @@ export const CreateApp = (): Application => {
 
     app.use('/api/v1/auth', authLimiter, authRouter);
     app.use('/api/v1/users', usersRouter);
+    app.use('/api/v1/auctions', auctionsRouter);
+    app.use('/api/v1/bidding', biddingRouter);
+    app.use('/api/v1/blogs', blogRouter);
+    app.use('/api/v1/announcements', announcementsRouter);
 
     app.get("/", (req: Request, res: Response) => {
       res.send("Welcome to Rex Auction Server");
