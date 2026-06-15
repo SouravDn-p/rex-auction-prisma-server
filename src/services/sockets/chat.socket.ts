@@ -1,12 +1,9 @@
 import type { Server as SocketIOServer, Socket } from "socket.io";
 import { socketAuthMiddleware } from "./socket-auth.middleware.ts";
-import { prisma } from "../../config/db/database.config.ts";
+import { ChatService } from "../../app/modules/chat/chat.service.ts";
 import { logger } from "../../app/common/utils/logger.util.ts";
-// Deterministic room ID for a pair of users (order-independent)
-const conversationRoom = (userIdA: number, userIdB: number) => {
-  const [a, b] = [userIdA, userIdB].sort((x, y) => x - y);
-  return `chat:${a}:${b}`;
-};
+
+const conversationRoom = (conversationId: number) => `chat:conversation:${conversationId}`;
 
 export const registerChatSocket = (io: SocketIOServer) => {
   const nsp = io.of("/chat");
@@ -14,80 +11,67 @@ export const registerChatSocket = (io: SocketIOServer) => {
   nsp.use(socketAuthMiddleware);
 
   nsp.on("connection", (socket: Socket) => {
-    const userId = socket.data.userId;
+    const userId = socket.data.userId as number;
     logger.info(`Socket connected: user ${userId} on /chat`);
 
-    // ─── Join a 1:1 conversation ───
-    socket.on("chat:join", async (payload: { otherUserId: number }, ack?: (res: any) => void) => {
+    ChatService.setUserOnline(userId).catch(() => {});
+
+    socket.on("chat:join", async (payload: { conversationId: number }, ack?: (res: unknown) => void) => {
       try {
-        const { otherUserId } = payload;
-        if (!otherUserId) throw new Error("otherUserId is required");
+        const { conversationId } = payload;
+        if (!conversationId) throw new Error("conversationId is required");
 
-        await socket.join(conversationRoom(userId, otherUserId));
+        const conversation = await ChatService.getConversationById(conversationId, userId);
+        await socket.join(conversationRoom(conversationId));
+        await ChatService.markDelivered(conversationId, userId);
 
-        // Mark messages from otherUser as read
-        await prisma.message.updateMany({
-          where: { senderId: otherUserId, receiverId: userId, isRead: false },
-          data: { isRead: true },
-        });
-
-        const history = await prisma.message.findMany({
-          where: {
-            OR: [
-              { senderId: userId, receiverId: otherUserId },
-              { senderId: otherUserId, receiverId: userId },
-            ],
-          },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        });
-
-        ack?.({ success: true, data: { history: history.reverse() } });
-      } catch (error: any) {
-        ack?.({ success: false, message: error.message });
+        const result = await ChatService.getMessages(conversationId, userId, undefined, 50);
+        ack?.({ success: true, data: { conversation, ...result } });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to join conversation";
+        ack?.({ success: false, message });
       }
     });
 
-    // ─── Send message ───
     socket.on(
       "chat:send",
-      async (payload: { receiverId: number; text: string }, ack?: (res: any) => void) => {
+      async (payload: { conversationId: number; text: string }, ack?: (res: unknown) => void) => {
         try {
-          const { receiverId, text } = payload;
-          if (!receiverId || !text?.trim()) throw new Error("receiverId and text are required");
+          const { conversationId, text } = payload;
+          if (!conversationId || !text?.trim()) {
+            throw new Error("conversationId and text are required");
+          }
 
-          const receiver = await prisma.user.findUnique({ where: { id: receiverId } });
-          if (!receiver) throw new Error("Recipient not found");
-
-          const message = await prisma.message.create({
-            data: { senderId: userId, receiverId, text: text.trim() },
+          const result = await ChatService.sendMessage(userId, {
+            conversationId,
+            text: text.trim(),
           });
 
-          const roomName = conversationRoom(userId, receiverId);
+          nsp.to(conversationRoom(result.conversationId)).emit("chat:message", result.message);
 
-          nsp.to(roomName).emit("chat:message", message);
-
-          // Also notify receiver's notification namespace if they're not in the chat room
-          io.of("/notifications").to(`user:${receiverId}`).emit("notification:new", {
+          io.of("/notifications").to(`user:${result.receiverId}`).emit("notification:new", {
             type: "new_message",
             message: `New message from ${socket.data.email}`,
             senderId: userId,
+            conversationId: result.conversationId,
           });
 
-          ack?.({ success: true, data: message });
-        } catch (error: any) {
-          ack?.({ success: false, message: error.message });
+          ack?.({ success: true, data: result.message });
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : "Failed to send message";
+          ack?.({ success: false, message });
         }
       }
     );
 
-    // ─── Typing indicator ───
-    socket.on("chat:typing", (payload: { otherUserId: number; isTyping: boolean }) => {
-      const roomName = conversationRoom(userId, payload.otherUserId);
-      socket.to(roomName).emit("chat:typing", { userId, isTyping: payload.isTyping });
+    socket.on("chat:typing", (payload: { conversationId: number; isTyping: boolean }) => {
+      socket
+        .to(conversationRoom(payload.conversationId))
+        .emit("chat:typing", { userId, isTyping: payload.isTyping });
     });
 
     socket.on("disconnect", () => {
+      ChatService.setUserOffline(userId).catch(() => {});
       logger.info(`Socket disconnected: user ${userId} from /chat`);
     });
   });

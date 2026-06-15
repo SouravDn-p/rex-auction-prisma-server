@@ -10,7 +10,7 @@ import type {
   AdminReviewAuctionDto,
   ListAuctionsQuery,
 } from "./interfaces/auctions.interface.ts";
-import { AuctionStatus, ReactionType } from "@prisma/client";
+import { AuctionStatus, PaymentStatus, DeliveryStatus, ReactionType } from "@prisma/client";
 
 const CURRENT_BID_KEY = (auctionId: number) => `auction:${auctionId}:currentBid`;
 
@@ -207,8 +207,8 @@ export class AuctionsService {
           originalAuctionId: auctionId,
           winnerId: topBid?.userId ?? null,
           finalPrice: topBid?.amount ?? auction.startingPrice,
-          deliveryStatus: "PENDING",
-          paymentStatus: "pending",
+          deliveryStatus: DeliveryStatus.PENDING,
+          paymentStatus: PaymentStatus.PENDING,
         },
       });
 

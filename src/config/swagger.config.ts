@@ -5,6 +5,8 @@ import { auctionsPaths } from "../app/modules/auctions/doc/auctions.swagger.ts";
 import { biddingPaths } from "../app/modules/bidding/doc/bidding.swagger.ts";
 import { blogPaths } from "../app/modules/blog/doc/blog.swagger.ts";
 import { announcementsPaths } from "../app/modules/announcements/doc/announcements.swagger.ts";
+import { paymentsPaths } from "../app/modules/payments/doc/payments.swagger.ts";
+import { chatPaths } from "../app/modules/chat/doc/chat.swagger.ts";
 
 export const swaggerSpec = swaggerJsdoc({
   definition: {
@@ -42,6 +44,8 @@ export const swaggerSpec = swaggerJsdoc({
       ...biddingPaths,
       ...blogPaths,
       ...announcementsPaths,
+      ...paymentsPaths,
+      ...chatPaths,
     },
   },
 

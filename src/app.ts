@@ -15,9 +15,18 @@ import auctionsRouter from "./app/modules/auctions/auctions.routes.ts";
 import biddingRouter from "./app/modules/bidding/bidding.routes.ts";
 import blogRouter from "./app/modules/blog/blog.routes.ts";
 import announcementsRouter from "./app/modules/announcements/announcements.routes.ts";
+import paymentsRouter from "./app/modules/payments/payments.routes.ts";
+import chatRouter from "./app/modules/chat/chat.routes.ts";
 
 export const CreateApp = (): Application => {
     const app: Application = express();
+
+    const PAYMENT_CALLBACK_PATHS = [
+      '/api/v1/payments/success',
+      '/api/v1/payments/fail',
+      '/api/v1/payments/cancel',
+      '/api/v1/payments/ipn',
+    ];
 
     app.use(helmet());
 
@@ -36,6 +45,7 @@ export const CreateApp = (): Application => {
         standardHeaders: true,
         legacyHeaders: false,
         message: { success: false, message: 'Too many requests, please try again later' },
+        skip: (req: Request) => PAYMENT_CALLBACK_PATHS.includes(req.path),
     }));
 
     const authLimiter = rateLimit({
@@ -71,6 +81,8 @@ export const CreateApp = (): Application => {
     app.use('/api/v1/bidding', biddingRouter);
     app.use('/api/v1/blogs', blogRouter);
     app.use('/api/v1/announcements', announcementsRouter);
+    app.use('/api/v1/payments', paymentsRouter);
+    app.use('/api/v1/chat', chatRouter);
 
     app.get("/", (req: Request, res: Response) => {
       res.send("Welcome to Rex Auction Server");

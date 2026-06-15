@@ -43,6 +43,8 @@ export const ENV = {
   SSLCOMMERZ_STORE_ID: required('SSLCOMMERZ_STORE_ID'),
   SSLCOMMERZ_STORE_PASSWORD: required('SSLCOMMERZ_STORE_PASSWORD'),
   SSLCOMMERZ_IS_LIVE: process.env.SSLCOMMERZ_IS_LIVE === 'true',
+  BACKEND_URL: required('BACKEND_URL'),
+  PLATFORM_FEE_PERCENT: Number(process.env.PLATFORM_FEE_PERCENT ?? '20'),
   
   //otp config
 

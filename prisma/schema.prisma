@@ -45,10 +45,12 @@ enum SellerRequestStatus {
 }
 
 enum PaymentStatus {
-  pending
-  success
-  failed
-  refunded
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
 }
 
 enum DeliveryStatus {
@@ -89,8 +91,11 @@ enum TransactionType {
   withdrawal
   bid_hold
   bid_refund
-  auction_payment
-  service_fee
+  auction_payment  // buyer paid
+  seller_earning   // 80% to seller
+  platform_fee     // 20% to platform
+  service_fee      // keep for backward compat
+  refund
 }
 
 enum AutoBidStatus {
@@ -99,6 +104,18 @@ enum AutoBidStatus {
   cancelled
   won
 }
+
+enum ConversationContextType {
+  direct
+  auction
+}
+
+enum MessageStatus {
+  sent
+  delivered
+  read
+}
+
 
 // =============================================
 // USERS & IDENTITY
@@ -145,6 +162,9 @@ model User {
   blogs             Blog[]
   reportsSubmitted  Report[]           @relation("ReportReporter")
   reportsReceived   Report[]           @relation("ReportedUser")
+  conversationsAsUserOne Conversation[] @relation("ConversationUserOne")
+  conversationsAsUserTwo Conversation[] @relation("ConversationUserTwo")
+  presence          UserPresence?
 
   @@unique([provider, providerId])
   @@index([role])
@@ -287,7 +307,7 @@ model Auction {
   startTime      DateTime
   endTime        DateTime
   status         AuctionStatus @default(upcoming)
-  paymentStatus  PaymentStatus @default(pending)
+  paymentStatus  PaymentStatus @default(PENDING)
   deliveryStatus DeliveryStatus @default(PENDING)
   notes          String?
   createdAt      DateTime      @default(now())
@@ -304,6 +324,7 @@ model Auction {
   reactions     AuctionReaction[]
   notifications Notification[]
   reports       Report[]
+  conversations Conversation[]
 
   @@index([sellerId])
   @@index([endTime])
@@ -356,7 +377,7 @@ model EndedAuction {
   winnerId          Int?
   finalPrice        Decimal        @db.Decimal(12, 2)
   deliveryStatus    DeliveryStatus @default(PENDING)
-  paymentStatus     PaymentStatus  @default(pending)
+  paymentStatus     PaymentStatus  @default(PENDING)
   endedAt           DateTime       @default(now())
 
   auction Auction @relation(fields: [originalAuctionId], references: [id])
@@ -376,9 +397,14 @@ model Payment {
   auctionId          Int?
   buyerId            Int?
   amount             Decimal       @db.Decimal(12, 2)
-  serviceFee         Decimal?      @db.Decimal(10, 2)
-  status             PaymentStatus @default(pending)
+  serviceFee         Decimal?      @db.Decimal(10, 2)   // platform 20%
+  sellerProceeds     Decimal?      @db.Decimal(12, 2)   // seller 80%
+  status             PaymentStatus @default(PENDING)
+  validatedAt        DateTime?     // when success callback validated
+  paidAt             DateTime?     // when IPN confirmed — money moves HERE
   paymentGatewayData Json?
+  ipnData            Json?         // stored separately for audit
+  invoiceNumber      String?       @unique @db.VarChar(50)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -388,6 +414,7 @@ model Payment {
   @@index([auctionId])
   @@index([buyerId])
   @@index([status])
+  @@index([trxId])
   @@map("payments")
 }
 
@@ -395,21 +422,60 @@ model Payment {
 // SOCIAL & MESSAGING
 // =============================================
 
+model Conversation {
+  id            Int                     @id @default(autoincrement())
+  userOneId     Int
+  userTwoId     Int
+  contextType   ConversationContextType @default(direct)
+  auctionId     Int?
+
+  lastMessageAt DateTime  @default(now())
+  lastMessageId Int?
+
+  // Soft delete per-user
+  deletedByUserOne Boolean @default(false)
+  deletedByUserTwo Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userOne  User      @relation("ConversationUserOne", fields: [userOneId], references: [id])
+  userTwo  User      @relation("ConversationUserTwo", fields: [userTwoId], references: [id])
+  auction  Auction?  @relation(fields: [auctionId], references: [id])
+  messages Message[]
+
+  @@unique([userOneId, userTwoId])
+  @@index([userOneId, lastMessageAt])
+  @@index([userTwoId, lastMessageAt])
+  @@map("conversations")
+}
+
 model Message {
-  id         Int      @id @default(autoincrement())
-  senderId   Int
-  receiverId Int
-  text       String
-  isRead     Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id             Int           @id @default(autoincrement())
+  conversationId Int
+  senderId       Int
+  receiverId     Int
+  text           String
+  status         MessageStatus @default(sent)
+  createdAt      DateTime      @default(now())
 
-  sender   User @relation("MessageSender", fields: [senderId], references: [id])
-  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id])
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id])
+  receiver     User         @relation("MessageReceiver", fields: [receiverId], references: [id])
 
-  @@index([senderId, receiverId])
-  @@index([receiverId])
-  @@index([createdAt])
+  @@index([conversationId, createdAt])
+  @@index([receiverId, status])
   @@map("messages")
+}
+
+model UserPresence {
+  userId     Int      @id
+  isOnline   Boolean  @default(false)
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_presence")
 }
 
 model Notification {
