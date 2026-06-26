@@ -45,3 +45,6 @@ The server enforces strict session management:
 *   **Token Rotation**: When an `accessToken` expires (e.g., 15m), the client can call `/auth/refresh-token`. The server validates the existing refresh token, revokes it in the database, and issues a brand new `accessToken` and `refreshToken` pair to prevent token hijacking.
 *   **Logout**: A `POST` to `/auth/logout` revokes the refresh token in the database and clears the auth cookies from the browser.
 *   **Protection Middleware (`protect`)**: Extracts the `accessToken` from cookies or `Authorization` headers, verifies the JWT signature, and attaches the active user payload to `req.user`.
+
+
+Changes
