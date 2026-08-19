@@ -122,7 +122,7 @@ enum MessageStatus {
 // =============================================
 
 model User {
-  id        Int          @id @default(autoincrement())
+  id        String       @id @default(uuid(7)) @db.Uuid
   name      String       @db.VarChar(150)
   email     String       @unique @db.VarChar(255)
   photo     String?
@@ -174,8 +174,8 @@ model User {
 }
 
 model UserStats {
-  id             Int      @id @default(autoincrement())
-  userId         Int      @unique
+  id             String   @id @default(uuid(7)) @db.Uuid
+  userId         String   @unique @db.Uuid
   accountBalance Decimal  @default(0) @db.Decimal(14, 2)
   auctionsWon    Int      @default(0)
   activeBids     Int      @default(0)
@@ -188,8 +188,8 @@ model UserStats {
 }
 
 model UserActivity {
-  id           Int          @id @default(autoincrement())
-  userId       Int
+  id           String       @id @default(uuid(7)) @db.Uuid
+  userId       String
   activityType ActivityType
   description  String?
   metadata     Json?
@@ -204,9 +204,9 @@ model UserActivity {
 }
 
 model Watchlist {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  auctionId Int
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String
+  auctionId String
   addedAt   DateTime @default(now())
 
   user    User    @relation(fields: [userId], references: [id])
@@ -218,12 +218,12 @@ model Watchlist {
 }
 
 model Transaction {
-  id            Int             @id @default(autoincrement())
-  userId        Int
+  id            String          @id @default(uuid(7)) @db.Uuid
+  userId        String
   type          TransactionType
   amount        Decimal         @db.Decimal(14, 2)
   referenceType String?         @db.VarChar(50)
-  referenceId   Int?
+  referenceId   String?
   note          String?
   createdAt     DateTime        @default(now())
 
@@ -237,15 +237,15 @@ model Transaction {
 }
 
 model SellerRequest {
-  id              Int                 @id @default(autoincrement())
-  userId          Int
+  id              String              @id @default(uuid(7)) @db.Uuid
+  userId          String
   status          SellerRequestStatus @default(pending)
   businessName    String?             @db.VarChar(255)
   contactPhone    String?             @db.VarChar(50)
   address         String?
   taxId           String?             @db.VarChar(100)
   additionalNotes String?
-  reviewedBy      Int?
+  reviewedBy      String?
   reviewedAt      DateTime?
   createdAt       DateTime            @default(now())
 
@@ -262,8 +262,8 @@ model SellerRequest {
 // =============================================
 
 model UserToken {
-  id         Int       @id @default(autoincrement())
-  userId     Int
+  id         String    @id @default(uuid(7)) @db.Uuid
+  userId     String
   tokenType  TokenType @default(refresh)
   tokenHash  String    @unique @db.VarChar(255)
   deviceInfo Json?
@@ -289,7 +289,7 @@ model UserToken {
 // =============================================
 
 model Auction {
-  id             Int           @id @default(autoincrement())
+  id             String        @id @default(uuid(7)) @db.Uuid
   title          String        @db.VarChar(255)
   description    String
 
@@ -299,7 +299,7 @@ model Auction {
   itemValuation  Decimal       @db.Decimal(12, 2)
   history        String
 
-  sellerId       Int
+  sellerId       String
   images         String[]
   category       String?       @db.VarChar(100)
   startingPrice  Decimal       @db.Decimal(12, 2)
@@ -337,9 +337,9 @@ model Auction {
 
 /// Short-lived feed for real-time UI; purged after auction ends
 model LiveBid {
-  id        Int      @id @default(autoincrement())
-  auctionId Int
-  userId    Int?
+  id        String   @id @default(uuid(7)) @db.Uuid
+  auctionId String
+  userId    String?
   name      String?  @db.VarChar(100)
   amount    Decimal  @db.Decimal(12, 2)
   createdAt DateTime @default(now())
@@ -353,9 +353,9 @@ model LiveBid {
 }
 
 model AutoBid {
-  id            Int           @id @default(autoincrement())
-  auctionId     Int
-  userId        Int
+  id            String        @id @default(uuid(7)) @db.Uuid
+  auctionId     String
+  userId        String
   maxBid        Decimal       @db.Decimal(12, 2)
   incrementStep Decimal       @db.Decimal(12, 2)
   status        AutoBidStatus @default(active)
@@ -372,9 +372,9 @@ model AutoBid {
 }
 
 model EndedAuction {
-  id                Int            @id @default(autoincrement())
-  originalAuctionId Int            @unique
-  winnerId          Int?
+  id                String         @id @default(uuid(7)) @db.Uuid
+  originalAuctionId String         @unique
+  winnerId          String?
   finalPrice        Decimal        @db.Decimal(12, 2)
   deliveryStatus    DeliveryStatus @default(PENDING)
   paymentStatus     PaymentStatus  @default(PENDING)
@@ -392,10 +392,10 @@ model EndedAuction {
 // =============================================
 
 model Payment {
-  id                 Int           @id @default(autoincrement())
+  id                 String        @id @default(uuid(7)) @db.Uuid
   trxId              String        @unique @db.VarChar(100)
-  auctionId          Int?
-  buyerId            Int?
+  auctionId          String?
+  buyerId            String?
   amount             Decimal       @db.Decimal(12, 2)
   serviceFee         Decimal?      @db.Decimal(10, 2)   // platform 20%
   sellerProceeds     Decimal?      @db.Decimal(12, 2)   // seller 80%
@@ -423,14 +423,14 @@ model Payment {
 // =============================================
 
 model Conversation {
-  id            Int                     @id @default(autoincrement())
-  userOneId     Int
-  userTwoId     Int
+  id            String                  @id @default(uuid(7)) @db.Uuid
+  userOneId     String
+  userTwoId     String
   contextType   ConversationContextType @default(direct)
-  auctionId     Int?
+  auctionId     String?
 
   lastMessageAt DateTime  @default(now())
-  lastMessageId Int?
+  lastMessageId String?
 
   // Soft delete per-user
   deletedByUserOne Boolean @default(false)
@@ -451,10 +451,10 @@ model Conversation {
 }
 
 model Message {
-  id             Int           @id @default(autoincrement())
-  conversationId Int
-  senderId       Int
-  receiverId     Int
+  id             String        @id @default(uuid(7)) @db.Uuid
+  conversationId String
+  senderId       String
+  receiverId     String
   text           String
   status         MessageStatus @default(sent)
   createdAt      DateTime      @default(now())
@@ -469,7 +469,7 @@ model Message {
 }
 
 model UserPresence {
-  userId     Int      @id
+  userId     String   @id @db.Uuid
   isOnline   Boolean  @default(false)
   lastSeenAt DateTime @default(now())
 
@@ -479,13 +479,13 @@ model UserPresence {
 }
 
 model Notification {
-  id               Int      @id @default(autoincrement())
-  recipientId      Int?
+  id               String   @id @default(uuid(7)) @db.Uuid
+  recipientId      String?
   title            String?  @db.VarChar(200)
   message          String?
   type             String?  @db.VarChar(50)
-  relatedAuctionId Int?
-  relatedUserId    Int?
+  relatedAuctionId String?
+  relatedUserId    String?
   isRead           Boolean  @default(false)
   createdAt        DateTime @default(now())
 
@@ -500,9 +500,9 @@ model Notification {
 }
 
 model AuctionReaction {
-  id        Int          @id @default(autoincrement())
-  auctionId Int
-  userId    Int
+  id        String       @id @default(uuid(7)) @db.Uuid
+  auctionId String
+  userId    String
   reaction  ReactionType
   createdAt DateTime     @default(now())
 
@@ -519,8 +519,8 @@ model AuctionReaction {
 // =============================================
 
 model Announcement {
-  id        Int       @id @default(autoincrement())
-  userId    Int
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String
   title     String    @db.VarChar(255)
   content   String
   image     String?
@@ -536,10 +536,10 @@ model Announcement {
 }
 
 model Blog {
-  id          Int        @id @default(autoincrement())
+  id          String     @id @default(uuid(7)) @db.Uuid
   title       String     @db.VarChar(255)
   slug        String     @unique @db.VarChar(300)
-  authorId    Int
+  authorId    String
   imageUrls   String[]
   excerpt     String?    @db.VarChar(500)
   fullContent String?
@@ -559,8 +559,8 @@ model Blog {
 
 
 model BlogTag {
-  id     Int    @id @default(autoincrement())
-  blogId Int
+  id     String @id @default(uuid(7)) @db.Uuid
+  blogId String
   tag    String @db.VarChar(100)
 
   blog Blog @relation(fields: [blogId], references: [id])
@@ -571,10 +571,10 @@ model BlogTag {
 }
 
 model Report {
-  id             Int          @id @default(autoincrement())
-  reporterId     Int
-  reportedUserId Int?
-  auctionId      Int?
+  id             String       @id @default(uuid(7)) @db.Uuid
+  reporterId     String
+  reportedUserId String?
+  auctionId      String?
   reason         String?
   description    String?
   status         ReportStatus @default(pending)
