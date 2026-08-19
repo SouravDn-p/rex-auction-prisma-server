@@ -1,29 +1,27 @@
 # Rex Auction Server
 
-A high-performance, production-ready Node.js & Express API featuring strict **TypeScript** verification, **Prisma ORM (PostgreSQL)** database integration, and a secure **MVC Architecture** with cookie-based JWT Session Authentication.
+A high-performance, production-ready Node.js and Express API featuring strict **TypeScript** verification, **Prisma ORM** database integration, Redis-backed session handling, and secure cookie-based JWT authentication.
 
 ---
 
 ## 🚀 Key Features
 
-*   **Premium MVC Architecture**: Modular design separating routers, controllers, services, DTOs, and schema configurations.
-*   **Secure Session Authentication**: Dual-token strategy with rotating HTTP-only, secure, sameSite cookies to protect against XSS and CSRF attacks.
-*   **Prisma ORM & NeonDB**: Fully typed PostgreSQL integration using Prisma Client with fast, index-optimized database queries.
-*   **Robust DTO Validation**: Unified request body validation utilizing strict Joi schemas inside a reusable validation middleware.
-*   **Global Exception & Error Handling**: Standardized error response layout with built-in Prisma error parsing (unique constraints, not found records, validation issues).
-*   **Security First**: Protected with `helmet` headers, strict CORS origins, `hpp` parameter pollution prevention, and `express-rate-limit` rate limiters.
-*   **Self-documenting API Specs**: Integrated interactive **Swagger UI** containing schema validation models, security requirements, and custom responses.
+*   Modular MVC-style architecture with controllers, services, DTOs, and shared guards/utilities.
+*   Secure auth flow with short-lived access tokens, rotating refresh tokens, and HTTP-only cookies.
+*   Prisma + PostgreSQL persistence with token/session tracking in the database.
+*   Joi validation, centralized error handling, and consistent success/error response envelopes.
+*   Security middleware including `helmet`, `cors`, `hpp`, and rate limiting.
+*   Swagger UI documentation for the API surface.
 
 ---
 
 ## 🛠️ Technology Stack
 
-*   **Runtime & Server**: Node.js, Express.js (v5), TSX (TypeScript Execute)
-*   **Programming Language**: TypeScript
-*   **Database & ORM**: PostgreSQL, Prisma Client
-*   **Security & Auth**: jsonwebtoken, bcryptjs, cookie-parser, helmet, cors, hpp, express-rate-limit
-*   **Validation & Docs**: Joi, swagger-ui-express, swagger-jsdoc
-*   **Logger**: Winston (customized transport system)
+*   Node.js, Express.js 5, and TypeScript
+*   PostgreSQL with Prisma Client
+*   JWT, bcryptjs, cookie-parser, Passport Google OAuth
+*   Joi, Swagger UI, and Swagger JSDoc
+*   Redis for cache/session support and BullMQ for background jobs
 
 ---
 
@@ -32,106 +30,132 @@ A high-performance, production-ready Node.js & Express API featuring strict **Ty
 ```text
 rex-auction-server/
 ├── prisma/
-│   └── schema.prisma          # Database schema models (PostgreSQL)
+│   └── schema.prisma          # Database schema models
 ├── src/
 │   ├── app/
-│   │   ├── common/            # Shared features, helpers, and utilities
-│   │   │   ├── constants/     # HTTP Status codes, System response messages
-│   │   │   ├── exceptions/    # Global error handlers, XSS sanitizers, custom operational errors
-│   │   │   ├── guards/        # Authentication & Role restrictions, DTO validation middlewares
-│   │   │   ├── interceptors/  # Success/Error payload formatters
-│   │   │   └── utils/         # JWT helpers, secure cookie response utils, Winston logger instance
-│   │   └── modules/           # Domain-driven features
-│   │       ├── auth/          # Core Authentication module
-│   │       │   ├── doc/       # Swagger specifications for Auth paths
-│   │       │   ├── dto/       # Joi request validation schemas (login, register)
-│   │       │   ├── interfaces/# Types & interfaces for user payload mapping
-│   │       │   ├── auth.controller.ts
-│   │       │   ├── auth.routes.ts
-│   │       │   └── auth.service.ts
-│   │       └── users/         # User module (interfaces, extensions)
-│   ├── config/                # App-level configs (database, env, swagger)
-│   ├── types/                 # Custom global TypeScript declaration files
-│   ├── app.ts                 # Express Application bootstrapping & middleware pipelines
-│   └── main.ts                # Server entry point, database connection, graceful shutdown handling
-├── .env                       # Environment secrets and variable mappings
-├── package.json               # Package dependencies and scripts
-└── tsconfig.json              # TypeScript compilation specifications
+│   │   ├── common/            # Shared utilities, guards, middleware, constants
+│   │   └── modules/           # Feature modules such as auth, users, auctions, etc.
+│   ├── config/                # Environment, database, Redis, Swagger, Passport
+│   ├── services/             # Reusable services and templates
+│   ├── types/                 # Custom TypeScript declarations
+│   ├── app.ts                 # Express application bootstrap
+│   └── main.ts                # Server entry point
+├── docs/
+│   └── auth/                  # Authentication documentation
+├── docker-compose.yml         # Local Redis stack
+├── package.json
+└── README.md
 ```
 
 ---
 
-## ⚙️ Getting Started
+## ⚙️ Setup After Clone
 
-### 1. Prerequisites
-Ensure you have **Node.js (v18+)** and **npm** installed on your system.
+### Prerequisites
 
-### 2. Install Dependencies
-Run the following command at the project root to install the dependencies:
+You need:
+
+* Node.js 18+
+* npm
+* PostgreSQL
+* Redis
+
+The app also expects a configured email provider, JWT secrets, and OAuth secrets for the optional Google login flow.
+
+### Clone and install
+
 ```bash
+git clone <repo-url>
+cd rex-auction-prisma-server
 npm install
 ```
 
-### 3. Environment Variables Config
-Create or inspect the `.env` file in the root directory. Ensure the following environment variables are correctly assigned:
+### Environment variables
+
+Create a `.env` file in the project root. A typical local setup looks like this:
+
 ```ini
+NODE_ENV=development
 PORT=5000
-DATABASE_URL="your-postgresql-connection-string"
-JWT_ACCESS_SECRET="your-super-secret-access-key"
-JWT_REFRESH_SECRET="your-super-secret-refresh-key"
+FRONTEND_URL=http://localhost:3000
+BACKEND_URL=http://localhost:5000
+DATABASE_URL="postgresql://user:password@localhost:5432/rex_auction"
+REDIS_URL="redis://localhost:6379"
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+SESSION_SECRET="replace-with-a-long-random-string"
+JWT_ACCESS_SECRET="replace-with-a-long-random-string"
+JWT_REFRESH_SECRET="replace-with-a-long-random-string"
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
-NODE_ENV=development
+OTP_EXPIRES_MIN=10
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+GOOGLE_CALLBACK_URL=""
+BREVO_API_KEY=""
+MAIL_FROM="no-reply@example.com"
+MAIL_FROM_NAME="Rex Auction"
+SSLCOMMERZ_STORE_ID=""
+SSLCOMMERZ_STORE_PASSWORD=""
+SSLCOMMERZ_IS_LIVE=false
+PLATFORM_FEE_PERCENT=20
 ```
 
-### 4. Database Sync
-Push your local Prisma schema to synchronize it directly with your remote database:
+### Database setup without Docker
+
+If you already have PostgreSQL and Redis running locally or remotely:
+
 ```bash
+npx prisma generate
 npx prisma db push
 ```
 
-### 5. Running the Application
-*   **Development mode** (with hot-reload using nodemon & tsx):
-    ```bash
-    npm run dev
-    ```
+Then start the app:
 
-    > [!TIP]
-    > **Troubleshooting file watch limit (`ENOSPC: System limit for number of file watchers reached`)**:
-    > If you encounter an `ENOSPC` error on Linux, it means your operating system's file watcher limit has been exceeded.
-    > We have optimized the `dev` script to use a highly targeted `nodemon` command that only watches `src/**/*.ts` (reducing watcher usage significantly).
-    > To permanently resolve this system-wide on Linux, run:
-    > ```bash
-    > echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
-    > ```
-*   **Production Build & Run**:
-    ```bash
-    npm run build
-    npm start
-    ```
+```bash
+npm run dev
+```
+
+### Database setup with Docker
+
+The included `docker-compose.yml` starts Redis for local development:
+
+```bash
+docker compose up -d
+```
+
+After Docker is running:
+
+```bash
+npx prisma generate
+npx prisma db push
+npm run dev
+```
+
+### Production build
+
+```bash
+npm run build
+npm start
+```
+
+> [!TIP]
+> If you hit file watcher limits on Linux during development, increase the inotify watch limit system-wide.
 
 ---
 
-## 🔒 Authentication Flow & Cookie Mechanics
+## 🔒 Authentication Docs
 
-The server implements a state-of-the-art authentication mechanism supporting both **Local Login** and **Google OAuth**. For full details, see the dedicated [**Authentication System Documentation**](./AUTH.md).
+The full authentication guide lives in [docs/auth/auth.md](/docs/auth/auth.md). It covers:
 
-1.  **Dual Authentication Providers**:
-    *   **Local Auth**: Standard encrypted Email/Password registration and login.
-    *   **Google OAuth**: Seamless one-click login using `passport-google-oauth20` that dynamically links or creates user accounts.
-2.  **JWT & HTTP-Only Cookies**:
-    *   `accessToken` and `refreshToken` are set in the response headers as `HttpOnly`, `Secure` (in production), and `SameSite=Lax` cookies.
-    *   This completely blocks frontend JavaScript from accessing the tokens, eliminating modern XSS theft vectors.
-3.  **Authentication Middleware (`protect`)**:
-    *   Automatically parses incoming cookies or `Authorization: Bearer <token>` headers.
-    *   Validates the integrity of the JWT.
-    *   Fetches the active user state from the database and attaches it to the Express request object (`req.user`).
-4.  **Token Rotation (`/refresh-token`)**:
-    *   When the `accessToken` expires, the client calls `/refresh-token`.
-    *   The server verifies the rotating `refreshToken` against the database record, revokes old tokens, updates the database session with a new refresh token, and drops new, rotated cookies onto the client.
-5.  **Logout**:
-    *   The server invalidates the stored database session (`refreshToken` is set to `null`) and clears both cookies in the client browser.
+* OTP registration verification
+* password reset flow
+* access token and refresh token rotation
+* session storage and device management
+* logout and logout-all behavior
+* Google OAuth login
+* required auth-related environment variables
+
+Service-specific docs live under [docs/services/](./docs/services/README.md).
 
 ---
 
@@ -147,11 +171,18 @@ Once the server is running, the interactive Swagger UI is available at:
 
 | Endpoint | HTTP Method | Auth Required | Description | Request Body / Cookies |
 | :--- | :---: | :---: | :--- | :--- |
-| **/auth/register** | `POST` | ❌ No | Creates a new user account, registers them in PostgreSQL, and generates access and refresh tokens. | **Body**: `{ name, email, password }`<br>**Sets Cookies**: `accessToken`, `refreshToken` |
-| **/auth/login** | `POST` | ❌ No | Authenticates user credentials. Returns the sanitized user profile. | **Body**: `{ email, password }`<br>**Sets Cookies**: `accessToken`, `refreshToken` |
+| **/auth/register** | `POST` | ❌ No | Creates a new user account and sends an OTP for email verification. | **Body**: `{ name, email, password }` |
+| **/auth/verify-email** | `POST` | ❌ No | Verifies the OTP, marks the email as verified, and opens a session. | **Body**: `{ email, otp }`<br>**Sets Cookies**: `accessToken`, `refreshToken` |
+| **/auth/resend-otp** | `POST` | ❌ No | Resends the verification OTP with throttling. | **Body**: `{ email }` |
+| **/auth/forgot-password** | `POST` | ❌ No | Sends a password reset OTP for active accounts. | **Body**: `{ email }` |
+| **/auth/reset-password** | `POST` | ❌ No | Verifies the reset OTP and updates the password. | **Body**: `{ email, otp, newPassword }` |
+| **/auth/login** | `POST` | ❌ No | Authenticates credentials and creates a session. | **Body**: `{ email, password }`<br>**Sets Cookies**: `accessToken`, `refreshToken` |
 | **/auth/google** | `GET` | ❌ No | Initiates the Google OAuth consent flow. | **Redirects** to Google |
 | **/auth/google/callback** | `GET` | ❌ No | Google OAuth callback URL. Generates/Updates user and redirect to frontend dashboard. | **Sets Cookies**: `accessToken`, `refreshToken` |
 | **/auth/logout** | `POST` | 🔑 Yes | Revokes the current session refresh token in PostgreSQL and clears cookies on the client side. | **Headers**: `Authorization: Bearer <token>` OR **Cookies**: `accessToken` |
+| **/auth/logout-all** | `POST` | 🔑 Yes | Revokes every refresh token session for the user. | **Headers**: `Authorization: Bearer <token>` OR **Cookies**: `accessToken` |
+| **/auth/sessions** | `GET` | 🔑 Yes | Lists active device sessions for the current user. | **Headers**: `Authorization: Bearer <token>` OR **Cookies**: `accessToken` |
+| **/auth/sessions/:sessionId** | `DELETE` | 🔑 Yes | Revokes one active session by session id. | **Headers**: `Authorization: Bearer <token>` OR **Cookies**: `accessToken` |
 | **/auth/refresh-token** | `POST` | ❌ No | Rotates the refresh token session and issues a fresh set of authentication tokens. | **Cookies**: `refreshToken` OR **Body**: `{ refreshToken }`<br>**Sets Cookies**: `accessToken`, `refreshToken` (rotated) |
 | **/auth/me** | `GET` | 🔑 Yes | Returns the profile data of the currently logged-in user. | **Headers**: `Authorization: Bearer <token>` OR **Cookies**: `accessToken` |
 
