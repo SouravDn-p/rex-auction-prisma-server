@@ -332,6 +332,39 @@ Deletes one active refresh session by id.
 * If the email already exists as a local/password account, the login is rejected to avoid account collisions.
 * Google users are marked as verified because Google has already confirmed the email.
 
+## Implementation Reference
+
+### Token generation (`src/app/common/utils/jwt.util.ts`)
+
+```ts
+generateAccessToken(payload: { userId, email, role }): string   // ENV.JWT_ACCESS_SECRET, default 15m
+generateRefreshToken(payload: { userId, email, role }): string  // ENV.JWT_REFRESH_SECRET, default 7d
+verifyAccessToken(token): DecodedToken
+verifyRefreshToken(token): DecodedToken
+```
+
+### Cookie configuration (`src/app/common/utils/cookie.util.ts`)
+
+```ts
+setAuthCookies(res, { accessToken, refreshToken });  // httpOnly, secure in production, sameSite: 'lax'
+clearAuthCookies(res);
+```
+
+Access cookie `maxAge` is 15 minutes, refresh cookie `maxAge` is 7 days, matching `JWT_ACCESS_EXPIRES_IN`/`JWT_REFRESH_EXPIRES_IN`. Note: `REFRESH_TOKEN_TTL_MS` (used for session bookkeeping) is a separate, hardcoded constant that must be kept manually in sync with `JWT_REFRESH_EXPIRES_IN` — see the [Known Gaps](../../README.md#-known-gaps--notes-for-contributors) section in the root README.
+
+### Two auth guards — don't confuse them
+
+| Guard | File | Behavior |
+| --- | --- | --- |
+| `protect` | `src/app/common/guards/auth.middleware.ts` | The real guard used by every module's routes. Reads the `accessToken` cookie, verifies the JWT, then resolves the user through a 60s Redis cache (`user:auth:{userId}`) with a Prisma fallback on cache miss, and rejects if the user is missing/inactive. |
+| `authenticate` | `src/app/common/guards/authenticate.middleware.ts` | A simpler, standalone guard used **only within the auth module's own controller**. It verifies the JWT and trusts the decoded payload directly — no Redis/DB lookup, so it won't catch a user deactivated after the token was issued. Not used by any other module. |
+
+`restrictTo(...roles)` and `optionalProtect` (from `auth.middleware.ts`) both build on `protect`'s cache-backed lookup — see [Auth guard reference](../../README.md#auth-guard-reference) in the root README.
+
+### Auth cache invalidation
+
+Role/status changes call `invalidateUserCache(userId)` to evict the Redis cache entry immediately rather than waiting out the 60s TTL — this happens on seller-request approval and admin user activate/deactivate (see [docs/api-reference.md#users](../api-reference.md#users)).
+
 ## Response Format
 
 Most auth endpoints use the standard response envelope:
