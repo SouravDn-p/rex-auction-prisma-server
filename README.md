@@ -11,6 +11,7 @@ A production-oriented Node.js + Express + TypeScript API for a real-time online 
 - [Architecture](#-architecture)
 - [Project Structure](#-project-structure)
 - [Setup After Clone](#️-setup-after-clone)
+- [Build From Scratch](#-build-from-scratch)
 - [Environment Variables Reference](#-environment-variables-reference)
 - [API Overview](#-api-overview)
 - [Real-Time Layer (Socket.IO)](#-real-time-layer-socketio)
@@ -257,6 +258,16 @@ npm run format:check    # prettier --check .
 
 ---
 
+## 🧱 Build From Scratch
+
+If you want to **rebuild this server from an empty folder** (Node install → `npm init` → dependencies one by one → folder tree → bare Express → Prisma → auth → users), not clone-and-run, use:
+
+**[docs/from-scratch.md](./docs/from-scratch.md)**
+
+That guide stops after the two modules everything else sits on (`auth` + `users`). Auctions, bidding, payments, and sockets are the same module pattern repeated after that skeleton boots.
+
+---
+
 ## 🔑 Environment Variables Reference
 
 Parsed and validated in [`src/config/env.config.ts`](./src/config/env.config.ts).
@@ -490,6 +501,7 @@ The last middleware in `app.ts`, `errorHandler` (`src/app/common/exceptions/erro
 
 | Doc | Covers |
 | --- | --- |
+| [docs/from-scratch.md](./docs/from-scratch.md) | Rebuild from an empty folder: Node, deps, folder tree, bare server, Prisma, auth + users |
 | [docs/auth/auth.md](./docs/auth/auth.md) | Registration/OTP, login, password reset, JWT rotation, sessions, Google OAuth |
 | [docs/api-reference.md](./docs/api-reference.md) | Full endpoint reference for Users, Auctions, Bidding, Blog, Announcements, Chat |
 | [docs/services/sockets.md](./docs/services/sockets.md) | Socket.IO namespaces, events, and payloads |
